@@ -105,7 +105,8 @@ async function translateText(text, targetLang = 'es') {
         return null;
     }
 
-    const langCode = (targetLang || 'es').toLowerCase();
+    let langCode = (targetLang || 'es').toLowerCase();
+    if (langCode === 'tl' || langCode === 'tagalog') langCode = 'fil';
 
     try {
         const response = await axios.post(
@@ -122,6 +123,11 @@ async function translateText(text, targetLang = 'es') {
         return response.data[0]?.translations[0]?.text || '';
     } catch (error) {
         console.error('❌ [Azure Translator Error]:', error.response?.data || error.message);
+        // Automatic fallback to English if target language code is invalid (error 400036)
+        if (error.response?.data?.error?.code === 400036 && langCode !== 'en') {
+            console.log(`⚠️ Invalid Azure target language '${langCode}', falling back to English ('en')`);
+            return translateText(text, 'en');
+        }
         return null;
     }
 }
